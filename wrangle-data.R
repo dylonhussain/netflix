@@ -6,7 +6,7 @@ library(lubridate)
 
 
 setwd('Rda')
-load(edx.Rda)
+edx = readRDS('edx.Rda')
 ##################################DONT RUN The comment out code, kills RAM. used to get all genres.###########################
 # genresplit = edx %>% select(genres) %>% separate(genres, into = as.character(1:8), sep = '\\|')  
 # colnames(genresplit) = c('1', '1', '1', '1', '1', '1', '1', '1')
@@ -79,7 +79,8 @@ for (i in 1:length(genrelist)){
   b_u = bind_cols(b_u, temp2)
 }
 rm(temp, temp2)
-save(b_u)
-save(b_m)
-save(mu)
+saveRDS(b_u, file = 'b_u.Rda')
+saveRDS(b_m, file = 'b_m.Rda')
+saveRDS(mu, file = 'mu.Rda')
+saveRDS(genrelist, file = 'genrelist.Rda')
 setwd('..')

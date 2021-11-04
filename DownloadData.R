@@ -27,8 +27,8 @@ ratings <- fread(text = gsub("::", "\t", readLines(unzip(dl, "ml-10M100K/ratings
 movies <- str_split_fixed(readLines(unzip(dl, "ml-10M100K/movies.dat")), "\\::", 3)
 colnames(movies) <- c("movieId", "title", "genres")
 
-# if using R 3.6 or earlier:
-movies <- as.data.frame(movies) %>% mutate(movieId = as.numeric(levels(movieId))[movieId],
+# if using R 4.0 or later:
+movies <- as.data.frame(movies) %>% mutate(movieId = as.numeric(movieId),
                                            title = as.character(title),
                                            genres = as.character(genres))
 
@@ -50,8 +50,12 @@ removed <- anti_join(temp, validation)
 edx <- rbind(edx, removed)
 
 rm(dl, ratings, movies, test_index, temp, movielens, removed)
+
 #saves Rdas
+if(!file.exists('Rda')){
+  dir.create('Rda')
+}
 setwd('Rda')
-save(edx)
-save(validation)
+saveRDS(edx, file = 'edx.Rda')
+saveRDS(validation, file = 'validation.Rda')
 setwd('..')
