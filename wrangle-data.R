@@ -109,7 +109,8 @@ colnames(temp) = 'bg'
 edx2 = bind_cols(edx2, temp)
 
 #round timestamp to date
-edx2 %>% mutate(date = floor_date(as_datetime(timestamp), unit = 'day')) 
+edx2 = edx2 %>% mutate(date = floor_date(as_datetime(timestamp), unit = 'day')) 
+
 saveRDS(b_u, file = 'b_u.Rda')
 saveRDS(b_m, file = 'b_m.Rda')
 saveRDS(mu, file = 'mu.Rda')
