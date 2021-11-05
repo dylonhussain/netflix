@@ -3,47 +3,44 @@ library(caret)
 library(data.table)
 library(stringr)
 library(lubridate)
+library(ggplot2)
 
 setwd('Rda')
-edx = readRDS('edx.Rda')
+edx2 = readRDS('edx2.Rda')
 b_u = readRDS('b_u.Rda')
 b_m = readRDS('b_m.Rda')
 mu = readRDS('mu.Rda')
 validation = readRDS('validation.Rda')
 genrelist = readRDS('genrelist.Rda')
+#added to wrangling
+#edx2 = edx2 %>% mutate(date = floor_date(as_datetime(timestamp), unit = 'day'))
+date = edx2 %>% mutate(rating = rating - mu) %>% group_by(date) %>% summarise(rating = mean(rating))
 
-#finds all genres in observation and calculates user-genre effect b_g
-calcGE = function(g, u){
-  user = b_u %>% filter(userId == u)
-  genreeff = 0
-  genrecount = 0
-  for (i in 1:length(genrelist)){
-    if(str_detect(g, genrelist[i]) & !is.na(user[[1,i+2]])){
-      genrecount = genrecount + 1
-      genreeff = genreeff + user[[1,i+2]]
-    }
-  }
-  if(genrecount == 0){
-    genreeff = 0
-  }else{
-    genreeff = genreeff / genrecount
-  }
-  genreeff
+#calculates the fits for span from .1 to 10
+fitdf = data.frame(row.names = c('timestamp', 'rating', 'span'))
+for (i in c(1:10)){
+  span = i/10
+  fit = loess(rating ~ timestamp, data = edx2, span = span)
+  temp = bind_cols(as.data.frame(fit$x), as.data.frame(fit$fitted))
+  colnames(temp) = c('timestamp', 'rating')
+  temp = temp %>% mutate(rating = rating - mu, span = span)
+  fitdf = bind_rows(fitdf, temp)
+}
+#function to get time effect
+getbt = function (timestamp, span){
+  temp = fitdf %>% filter(span == span, timestamp == timestamp)
+  temp[1]$rating
 }
 
-#binds b_g to edx
-  temp = mapply(calcGE, fold$genres, fold$userId) %>% enframe() %>% select('value')  
-  colnames(temp) = 'bg'
-  fold = bind_cols(fold, temp)
-  fold = fold %>% mutate(pred = mu + bg + bu + bm)
+date %>% ggplot(aes(date, rating)) + geom_point(size = 1) + geom_line(data = fitdf, size = 2, color = 'blue') + 
+  scale_y_log10()
+
 # 
 # foldindx = createFolds(y = edx$rating, k = 50)
 # fold = edx[as.vector(foldindx[[i]]),]
-# timebin = 1000
-# timespan = diff(range(edx$timestamp))
+
 # span = timespan/timebin
-# fit = loess(rating ~ timestamp, span = span, data = edx)
-#temp = predict(fit, timestamp)
+
 # 
 # train = train %>% mutate(pred = mu + bu + bm) %>% mutate(pred = ifelse(pred < .5, .5, ifelse(pred > 5, 5, pred))) %>% 
 #   mutate(pred = round(pred*2,0)/2)
