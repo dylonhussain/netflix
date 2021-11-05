@@ -7,8 +7,6 @@ library(lubridate)
 
 setwd('Rda')
 edx2 = readRDS('edx.Rda')
-# index = createDataPartition(edx2$rating, times = 1, p = .005, list = FALSE)
-# edx2 = edx2[index,]
 ##################################DONT RUN The comment out code, kills RAM. used to get all genres.###########################
 # genresplit = edx %>% select(genres) %>% separate(genres, into = as.character(1:8), sep = '\\|')  
 # colnames(genresplit) = c('1', '1', '1', '1', '1', '1', '1', '1')
