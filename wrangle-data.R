@@ -55,16 +55,17 @@ genrelist = c('Comedy', 'Action','Children','Adventure','Animation','Drama','Cri
               'Musical',
               'War',
               'IMAX')
+saveRDS(genrelist, file = 'genrelist.Rda')
 
 #Determine mu, the average movie rating
 mu = edx2 %>% summarise(mu = mean(rating)) %>% .[[1]]
-
+saveRDS(mu, file = 'mu.Rda')
 #Determine b_m, the movie effect
 b_m = edx2 %>% group_by(movieId) %>% summarise(bm = mean(rating) - mu)
-
+saveRDS(b_m, file = 'b_m.Rda')
 #Determine b_u, the user effect
 b_u = edx2 %>% group_by(userId) %>% summarise(bu = mean(rating) - mu)
-
+saveRDS(b_u, file = 'b_u.Rda')
 #Add columns to validation set and find expected rating.
 edx2 = left_join(edx2, b_u, by = 'userId')
 edx2 = left_join(edx2, b_m, by = 'movieId')
@@ -108,10 +109,5 @@ edx2 = bind_cols(edx2, temp)
 
 #round timestamp to date
 edx2 = edx2 %>% mutate(date = floor_date(as_datetime(timestamp), unit = 'day')) 
-
-saveRDS(b_u, file = 'b_u.Rda')
-saveRDS(b_m, file = 'b_m.Rda')
-saveRDS(mu, file = 'mu.Rda')
 saveRDS(edx2, file = 'edx2.Rda')
-saveRDS(genrelist, file = 'genrelist.Rda')
 setwd('..')
