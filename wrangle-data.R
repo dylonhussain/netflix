@@ -3,6 +3,7 @@ library(caret)
 library(data.table)
 library(stringr)
 library(lubridate)
+library(purrr)
 
 
 setwd('Rda')
@@ -96,15 +97,13 @@ calcGE = function(g, u){
   }
   if(genrecount == 0){
     genreeff = 0
-  }else{
-    genreeff = genreeff / genrecount
   }
-  genreeff
+  c(genreeff, genrecount)
 }
 
 #binds b_g to edx
-temp = mapply(calcGE, edx2$genres, edx2$userId) %>% enframe() %>% select('value')  
-colnames(temp) = 'bg'
+temp = mapply(calcGE, edx2$genres, edx2$userId)   
+b_g = data.frame(b_g = temp[1,], gcount = temp[2,])
 edx2 = bind_cols(edx2, temp)
 
 #round timestamp to date

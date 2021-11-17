@@ -4,6 +4,7 @@ library(data.table)
 library(stringr)
 library(lubridate)
 library(ggplot2)
+library(purr)
 
 setwd('Rda')
 edx2 = readRDS('edx2.Rda')
