@@ -3,7 +3,6 @@ library(caret)
 library(data.table)
 library(stringr)
 library(lubridate)
-library(purrr)
 
 
 setwd('Rda')
@@ -58,30 +57,53 @@ genrelist = c('Comedy', 'Action','Children','Adventure','Animation','Drama','Cri
               'IMAX')
 saveRDS(genrelist, file = 'genrelist.Rda')
 
-#Determine mu, the average movie rating
+# #Determine mu, the average movie rating
+# mu = edx2 %>% summarise(mu = mean(rating)) %>% .[[1]]
+# saveRDS(mu, file = 'mu.Rda')
+# #Determine b_m, the movie effect
+# b_m = edx2 %>% group_by(movieId) %>% summarise(bm = mean(rating) - mu)
+# saveRDS(b_m, file = 'b_m.Rda')
+# #Determine b_u, the user effect
+# b_u = edx2 %>% group_by(userId) %>% summarise(bu = mean(rating) - mu)
+# saveRDS(b_u, file = 'b_u.Rda')
+# #Add columns to validation set and find expected rating.
+# edx2 = left_join(edx2, b_u, by = 'userId')
+# edx2 = left_join(edx2, b_m, by = 'movieId')
+
+# #Determine mu, the average movie rating but corrects for previous prediction
 mu = edx2 %>% summarise(mu = mean(rating)) %>% .[[1]]
 saveRDS(mu, file = 'mu.Rda')
 #Determine b_m, the movie effect
-b_m = edx2 %>% group_by(movieId) %>% summarise(bm = mean(rating) - mu)
-saveRDS(b_m, file = 'b_m.Rda')
-#Determine b_u, the user effect
-b_u = edx2 %>% group_by(userId) %>% summarise(bu = mean(rating) - mu)
-saveRDS(b_u, file = 'b_u.Rda')
-#Add columns to validation set and find expected rating.
-edx2 = left_join(edx2, b_u, by = 'userId')
+b_m = edx2 %>% mutate(rating = rating - mu) %>% group_by(movieId)  %>% summarise(bm = mean(rating))
 edx2 = left_join(edx2, b_m, by = 'movieId')
+#Determine b_u, the user effect
+b_u = edx2 %>% mutate(rating = rating - mu - bm) %>% group_by(userId) %>% summarise(bu = mean(rating))
+edx2 = left_join(edx2, b_u, by = 'userId')
+#Add columns to validation set and find expected rating.
+
+
 
 #creates data frame of user-genre effect 
 
+# for (i in 1:length(genrelist)){
+#   temp = edx2 %>% filter(str_detect(edx2$genre, genrelist[i])) %>% group_by(userId) %>% 
+#                                                 summarise(thisgenre = mean(rating))
+#   colnames(temp) = c('userId', genrelist[i])
+#   temp = left_join(b_u, temp, by = 'userId')
+#   temp2 = temp[i+2] - temp[2] - mu  #user-genre_effect = avg_genre_rating - bu - mu
+#   b_u = bind_cols(b_u, temp2)
+# }
+# rm(temp, temp2)
+#### corrected user genre effect
 for (i in 1:length(genrelist)){
-  temp = edx2 %>% filter(str_detect(edx2$genre, genrelist[i])) %>% group_by(userId) %>% 
-                                                summarise(thisgenre = mean(rating))
+  temp = edx2 %>% mutate(rating = rating - mu - bm - bu) %>%
+    filter(str_detect(edx2$genre, genrelist[i])) %>% group_by(userId) %>% 
+    summarise(thisgenre = mean(rating))
   colnames(temp) = c('userId', genrelist[i])
   temp = left_join(b_u, temp, by = 'userId')
-  temp2 = temp[i+2] - temp[2] - mu  #user-genre_effect = avg_genre_rating - bu - mu
-  b_u = bind_cols(b_u, temp2)
+  b_u = bind_cols(b_u, temp[, i + 2])
 }
-rm(temp, temp2)
+rm(temp)
 
 
 #finds all genres in observation and calculates user-genre effect b_g
@@ -103,10 +125,11 @@ calcGE = function(g, u){
 
 #binds b_g to edx
 temp = mapply(calcGE, edx2$genres, edx2$userId)   
-b_g = data.frame(b_g = temp[1,], gcount = temp[2,])
-edx2 = bind_cols(edx2, temp)
+b_g = data.frame(bg = temp[1,], gcount = temp[2,])
+edx2 = bind_cols(edx2, b_g)
 
 #round timestamp to date
 edx2 = edx2 %>% mutate(date = floor_date(as_datetime(timestamp), unit = 'day')) 
-saveRDS(edx2, file = 'edx2.Rda')
+#saveRDS(edx2, file = 'edx2.Rda')
+saveRDS(edx2, file = 'edx2corrected.Rda')
 setwd('..')
