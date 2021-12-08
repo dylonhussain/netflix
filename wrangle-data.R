@@ -128,6 +128,9 @@ temp = mapply(calcGE, edx2$genres, edx2$userId)
 b_g = data.frame(bg = temp[1,], gcount = temp[2,])
 edx2 = bind_cols(edx2, b_g)
 
+#make rating a factor
+edx2$rating = as.factor(edx2$rating)
+
 #round timestamp to date
 edx2 = edx2 %>% mutate(date = floor_date(as_datetime(timestamp), unit = 'day')) 
 #saveRDS(edx2, file = 'edx2.Rda')
