@@ -5,6 +5,26 @@ library(stringr)
 library(lubridate)
 library(ggplot2)
 
+#####################################################
+#Helper code to save and load objects if code is
+#is run in segments
+#####################################################
+saveRDS(b_m, file = 'b_m.Rda')
+saveRDS(b_u, file = 'b_u.Rda')
+saveRDS(edx, file = 'edx.Rda')
+saveRDS(genrelist, file = 'genrelist.Rda')
+saveRDS(mu, file = 'mu.Rda')
+saveRDS(knnfit, file = 'knnfactorfit.Rda')
+saveRDS(validation, file = 'validation.Rda')
+edx = readRDS('edx.Rda')
+mu = readRDS('mu.Rda')
+b_m = readRDS('b_m.Rda')
+b_u = readRDS('b_u.Rda')
+b_g = readRDS('b_g.Rda')
+genrelist = readRDS('genrelist.Rda')
+knnfit = readRDS('knnfit.Rda')
+validation = readRDS('validation.Rda')
+
 ##########################################################
 # Create edx set, validation set (final hold-out test set)
 ##########################################################
@@ -60,12 +80,14 @@ removed <- anti_join(temp, validation)
 edx <- rbind(edx, removed)
 
 rm(dl, ratings, movies, test_index, temp, movielens, removed)
-##################End Copied Code
 
-#####################Begin Dylon's Code
+################################################
+#End Copied Code Begin Dylon's Code
+#To make prediction algorithm based on Netflix dataset
+################################################
 
 
-#Code to find all genres in dataset##########################
+#Code to find all genres in dataset
 ngenres = 9
 
 #Splits genres into columns with one genre each
@@ -86,7 +108,7 @@ for (i in 2:ngenres){
 #Removes all redundancies from genrelist
 genrelist = distinct(genrelist)
 
-# #Determine mu, the average movie rating but corrects for previous prediction
+# #Determine mu, the average movie rating 
 mu = edx %>% summarise(mu = mean(rating)) %>% .[[1]]
 
 #Determine b_m, the movie effect: mean deviation from prediction by user
@@ -122,7 +144,7 @@ calcGE = function(arg){
   c(as.numeric(genreeff), as.numeric(genrecount))
 }
 
-#binds b_g to edx
+#binds b_g and number of genres to edx
 #############################WARNING!!!!!! Takes a VERY long time to run################
 b_g = edx %>% select(genres, userId) %>% apply(1, calcGE) %>% t() %>% data.frame() 
 colnames(b_g) = c('bg', 'genrecount')
@@ -161,7 +183,8 @@ tuneval = seq(30, 45,1)/100
 tuneresults = sapply(tuneval, powerrmse)
 exptune = data.frame(power = tuneval, rmse = tuneresults)
 plot(exptune$power, exptune$rmse)
-power = exptune %>% top_n(-1, rmse) %>% .$power
+#power = exptune %>% top_n(-1, rmse) %>% .$power
+power = .41
 
 #Weight Tune
 #Uses 10-fold cross validation to find
@@ -192,14 +215,20 @@ tuneresults = sapply(tuneval, weightrmse)
 weighttune = data.frame(weight = tuneval, rmse = tuneresults)
 plot(weighttune$weight, weighttune$rmse)
 
+#makes prediction rhat
+edx = edx %>% mutate(rhat = mu+bm+bu+ifelse(genrecount != 0, bg/genrecount^power,0))
+
+
+#######################################################################
+#Code to determine optimal span for time effect
+#Commented out because it takes forever to run and not used in final calculations
+#######################################################################
+
 #finds error from prediction with mu, bu, bm, and bg
 #.41 came from optimizing powerrmse
-edx = edx %>% 
-  mutate(err = rating - mu - bu - bm - ifelse(genrecount != 0, bg/(genrecount)^ 0.41, 0))
-  
+# edx = edx %>% 
+#   mutate(err = rating - mu - bu - bm - ifelse(genrecount != 0, bg/(genrecount)^ power, 0))
 
-#######################Commented out because it takes forever to run
-########################And not used in final calculations
 #Span Tune
 #Uses 10-fold cross validation to find
 #expected RMSE for given span, i
@@ -232,7 +261,7 @@ edx = edx %>%
 #   spanerr = rbind(spanerr, temp)
 #   saveRDS(spanerr, file = 'spanerr.Rda')
 # }
-# 
+#    #creates time fit on the error and uses it to predict bt on edx
 # span = 5
 # timefit =  edx %>% mutate(date = as.numeric(as.Date(date))) %>% 
 #   group_by(date) %>% summarise(err = mean(err)) %>% 
@@ -243,27 +272,14 @@ edx = edx %>%
 # edx = edx %>% mutate(bt = predict(timefit,as.numeric(as.Date(date)))) %>% 
 #   mutate(rhat = mu + bu + bm + bg + bt) 
 
-
-#################Work on this make sure it works on a small p with no knnduration existing already
-#edx = readRDS('edx.Rda')
-saveRDS(b_m, file = 'b_m.Rda')
-saveRDS(b_u, file = 'b_u.Rda')
-saveRDS(edx, file = 'edx.Rda')
-saveRDS(genrelist, file = 'genrelist.Rda')
-saveRDS(mu, file = 'mu.Rda')
-saveRDS(knnfit, file = 'knnfactorfit.Rda')
-edx = readRDS('edx.Rda')
-mu = readRDS('mu.Rda')
-b_m = readRDS('b_m.Rda')
-b_u = readRDS('b_u.Rda')
-b_g = readRDS('b_g.Rda')
-genrelist = readRDS('genrelist.Rda')
-knnfit = readRDS('knnfit.Rda')
+#######################################################################
+#Code for making a knn model
+#commented out because it is not used in calculations
+#######################################################################
 
 
-#####for loop finding duration to make knnmodel for different portions of edx
-#####commented out because it is not used in calculations
-# edx = edx %>%  mutate(rhat = mu + bu + bm + ifelse(genrecount != 0, bg/(genrecount)^ 0.41, 0))
+#for loop finding time required to make knnmodel for different portions of edx
+# edx = edx %>%  mutate(rhat = mu + bu + bm + ifelse(genrecount != 0, bg/(genrecount)^ power, 0))
 # for (p in seq(.004, .006, .001)){
 #   p = .005
 #   small = createDataPartition(edx$rating, times = 1, p = p)
@@ -277,96 +293,40 @@ knnfit = readRDS('knnfit.Rda')
 # saveRDS(knnduration, file = 'knnduration.Rda')
 # plot(knnduration)
 
-#changes rating to factor for knn fit
-edx$rating = as.factor(edx$rating)
-
 #Creates knn model (knnfit) for .005 sample of edx
+#RMSE 0.836469 for (3.984527 when rating is a factor)
+#p = .005 so scrapped the knn idea
 p = .005
 small = createDataPartition(edx$rating, times = 1, p = p)
 small = as.vector(small$Resample1)
-small = edx[small,] %>% select(rating, rhat)
+small = edx[small,]  %>%
+  select(rating, rhat)
 knnfit = train(rating ~ rhat, data = small, method = 'knn')
 
 #Uses knn model (knnfit) to make final prediction for edx
-prediction = data.frame(prediction = predict(knnfit, newdata = edx))
+prediction = data.frame(rhat = predict(knnfit, newdata = edx))
+edx = edx %>% select(-rhat)
 edx = bind_cols(edx, prediction)
 
+#Uses 10 fold validation to estimate the RMSE 
 foldcount = 10
 fold = createFolds(edx$rating, k = foldcount)
 rmse = 0
 for (i in c(1:foldcount)){
   thisfold = edx[as.vector(fold[[i]]),]
-  errsum = thisfold %>% mutate(errsq = (as.numeric(rating) - as.numeric(mu+bm+bu+ifelse(genrecount != 0, bg/genrecount^.41,0)))^2) %>%
+  errsum = thisfold %>% mutate(errsq = (as.numeric(rating) - as.numeric(rhat))^2) %>%
     select(errsq) %>% sum()
   rmse = rmse + sqrt(errsum/length(fold[[i]]))
 }
 rmse = rmse/foldcount
 
-check = data.frame(b_u[,3], b_u[,3])
+#############################################################
+#End of training portion, begin validation
+#############################################################
 
-
-small %>% mutate(hit = prediction == rating) %>% summarise(mean(hit))
-
-#alternative to knn
-view = edx %>% mutate(prediction = round(2 * rhat,0)) %>% 
-  mutate(prediction = ifelse(prediction <0, 0, prediction)) %>%
-  mutate(prediction = ifelse(prediction > 10, 10, prediction)) %>%
-  mutate(prediction = prediction/2) %>% mutate(hit = prediction == rating) %>%
-  select(rating, rhat, prediction, hit)
-edx %>% mutate(hit = prediction == rating) %>% summarise(mean(hit))
-edx %>% mutate(errsq = (as.numeric(rating) - rhat)^2) %>% summarise(mean(errsq))
-# last = slice_max(edx, order_by = prediction, n = 1)
-# first = slice_min(edx, order_by = prediction, n = 1)
-# edxsmall3 = bind_rows(edxsmall3, last)
-# edxsmall3 = bind_rows(edxsmall3, first)
-# edxsmall3$rating = factor(edxsmall3$rating)
-#edxsmall3 = edxsmall3 %>% select(rating, prediction)
-
-#trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 1)
-#knnfit = train(rating ~ ., data = edxsmall3, method = 'knn', trControl=trctrl,
-#               preProcess = c("center", "scale"), tuneLength = 10)
-knnfit = train(rating ~ rhat, data = edx, method = 'knn')
-saveRDS(knnfit, file = 'knnfit.Rda')
-final = data.frame(predict(knnfit, newdata = edx))
-colnames(final)= 'final'
-edxsmall3 = bind_cols(edx, final)
-
-edx %>% mutate(hit = (final == rating)) %>% summarise(accuracy = mean(hit))
-saveRDS(knnfit, file = 'knnfit.Rda')
-
-fold = createFolds(edx$pred, k = 10)
-
-start = 2
-end = 6
-number = subset(edx, select = c(rating, bu, bm, bg, bt)) %>% mutate(mu = mu)
-number = number[,c(1,6,2,3,4,5)] %>% mutate(error = as.numeric(rating))
-errors = data.frame(errsq = double())
-for (j in c(start:end)){
-  number[,'error'] = number[,'error'] - number[,..j]
-  rmse = 0
-  for (i in c(1:10)) {
-
-    folderr = number[as.vector(fold[[i]]),] %>% mutate(errsq = error*error) %>%
-      summarise(errsq = sum(errsq)) %>% .[[1]]
-    rmse = rmse + (folderr/length(fold[[i]]))^(.5)
-    #temp = temp %>% mutate(hit = (rating == predict(knnfit, pred))) %>% summarise(mean(hit))
-  }
-  rmse = rmse/10
-  errors[nrow(errors)+1,]=rmse
-}
-rownames(errors) = c('mu', 'bu', 'bm', 'bg', 'bt')
-  
-#date %>% ggplot(aes(date, rating)) + geom_point(size = 1) + geom_line(data = fitdf, size = 2, color = 'blue') + 
-#  scale_y_log10()
-
-# 
-# foldindx = createFolds(y = edx$rating, k = 50)
-# fold = edx[as.vector(foldindx[[i]]),]
-
-# span = timespan/timebin
-
-# 
-# train = train %>% mutate(pred = mu + bu + bm) %>% mutate(pred = ifelse(pred < .5, .5, ifelse(pred > 5, 5, pred))) %>% 
-#   mutate(pred = round(pred*2,0)/2)
-# 
-# train %>% mutate(sqer = (pred - rating)*(pred-rating)) %>% summarise(msqe = mean(sqer)) %>% sqrt()
+b_u_small = b_u %>% select(userId, bu)
+validation = left_join(validation, b_u_small, by = 'userId')
+validation = left_join(validation, b_m, by = 'movieId')
+b_g = validation %>% select(genres, userId) %>% apply(1, calcGE) %>% t() %>% data.frame() 
+colnames(b_g) = c('bg', 'genrecount')
+validation = bind_cols(validation, b_g)
