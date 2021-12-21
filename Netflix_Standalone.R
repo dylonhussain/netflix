@@ -324,9 +324,20 @@ rmse = rmse/foldcount
 #End of training portion, begin validation
 #############################################################
 
+#Join columns needed for calc
 b_u_small = b_u %>% select(userId, bu)
 validation = left_join(validation, b_u_small, by = 'userId')
 validation = left_join(validation, b_m, by = 'movieId')
 b_g = validation %>% select(genres, userId) %>% apply(1, calcGE) %>% t() %>% data.frame() 
 colnames(b_g) = c('bg', 'genrecount')
 validation = bind_cols(validation, b_g)
+
+#Sum of error squared
+errsq = validation %>%
+  mutate(rhat = mu+bm+bu+ifelse(genrecount != 0, bg/genrecount^power,0)) %>%
+  mutate(errsq = (as.numeric(rating) - as.numeric(rhat))^2) %>%
+    select(errsq) %>% sum()
+
+#root mean
+rmse = sqrt(errsq/nrow(validation))
+# rmse = 0.8601549 WOOT!!!!!!
