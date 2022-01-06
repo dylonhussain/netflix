@@ -1,0 +1,46 @@
+---
+title: "MovieLens Report"
+author: "Dylon Hussain"
+date: "1/5/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Introduction
+Machine learning is a ubiquitous feature  In this report we describe a movie recommendation system for the MovieLens dataset.
+##Methods
+To achieve the prediction algorithm we used matrix factorization where we assume
+$$ Y_{m,u} = \mu + b_m + b_u + bg_{u,m} + \epsilon_{u,i} $$ where $$ \Y_{m,u}$$ is the  rating user u will give movie m, $$\mu$$ is the average movie rating $$b_m$$ is the effect of movie m $$b_u$$ is the effect of user u and $$b_g$$ is the genere effect for user u and the genres of movie m. To estimate $$\mu$$ the mean of all ratings in the training set was taken. $$b_m$$ was similarly taken to be the mean of ratings that movie received minus $$\mu$$, $$\hat{b}_m = \bar{Y}_m -\mu$$. $$\hat{b}_u$$ was, however corrected using $$b_m$$ and calculated with the following formula $$\hat{b}_u =  \overline{Y_{u,m}-b_m}-\mu$$, this was done to minimize movie biases on the estimate of the user effect. $$bg_{u,m}$$ was more complicated to estimate: first the estimate of the effect a particular genre would have on a particular users rating was calculated by $$\hat{b}_{u,g}= \overline{Y_{u,m}-b_m-b_u}-\mu$$ then it was assumed that $$bg_{u,m} = f(b_{u,g,1},b_{u,g,2}, ..., b_{u,g,N},N)$$
+described in Introduction to Data Science R. Irizarry
+
+##Results
+
+##Conclusion
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+We are going to use the following library:
+
+```{r loading-libs, message=FALSE}
+library(tidyverse)
+```
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
