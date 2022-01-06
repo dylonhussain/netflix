@@ -9,21 +9,21 @@ library(ggplot2)
 #Helper code to save and load objects if code is
 #is run in segments
 #####################################################
-saveRDS(b_m, file = 'b_m.Rda')
-saveRDS(b_u, file = 'b_u.Rda')
-saveRDS(edx, file = 'edx.Rda')
-saveRDS(genrelist, file = 'genrelist.Rda')
-saveRDS(mu, file = 'mu.Rda')
-saveRDS(knnfit, file = 'knnfactorfit.Rda')
-saveRDS(validation, file = 'validation.Rda')
-edx = readRDS('edx.Rda')
-mu = readRDS('mu.Rda')
-b_m = readRDS('b_m.Rda')
-b_u = readRDS('b_u.Rda')
-b_g = readRDS('b_g.Rda')
-genrelist = readRDS('genrelist.Rda')
-knnfit = readRDS('knnfit.Rda')
-validation = readRDS('validation.Rda')
+# saveRDS(b_m, file = 'b_m.Rda')
+# saveRDS(b_u, file = 'b_u.Rda')
+# saveRDS(edx, file = 'edx.Rda')
+# saveRDS(genrelist, file = 'genrelist.Rda')
+# saveRDS(mu, file = 'mu.Rda')
+# saveRDS(knnfit, file = 'knnfactorfit.Rda')
+# saveRDS(validation, file = 'validation.Rda')
+# edx = readRDS('edx.Rda')
+# mu = readRDS('mu.Rda')
+# b_m = readRDS('b_m.Rda')
+# b_u = readRDS('b_u.Rda')
+# b_g = readRDS('b_g.Rda')
+# genrelist = readRDS('genrelist.Rda')
+# knnfit = readRDS('knnfit.Rda')
+# validation = readRDS('validation.Rda')
 
 ##########################################################
 # Create edx set, validation set (final hold-out test set)
@@ -340,4 +340,17 @@ errsq = validation %>%
 
 #root mean
 rmse = sqrt(errsq/nrow(validation))
+rmse
 # rmse = 0.8601549 WOOT!!!!!!
+
+#Makes path for rdas that the report will use and saves them
+ifelse(!dir.exists('rdas'), dir.create('rdas'), print('folder rdas exists'))
+setwd('rdas')
+edx = readRDS('edx.Rda')
+mu = readRDS('mu.Rda')
+b_m = readRDS('b_m.Rda')
+b_u = readRDS('b_u.Rda')
+b_g = readRDS('b_g.Rda')
+genrelist = readRDS('genrelist.Rda')
+knnfit = readRDS('knnfit.Rda')
+validation = readRDS('validation.Rda')
