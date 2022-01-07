@@ -12,10 +12,13 @@ knitr::opts_chunk$set(echo = TRUE)
 Machine learning is a ubiquitous feature  In this report we describe a movie recommendation system for the MovieLens dataset.
 ##Methods
 To achieve the prediction algorithm we used matrix factorization where we assume
-$$ Y_{m,u} = \mu + b_m + b_u + bg_{u,m} + \epsilon_{u,i} $$ where $$ \Y_{m,u}$$ is the  rating user u will give movie m, $$\mu$$ is the average movie rating $$b_m$$ is the effect of movie m $$b_u$$ is the effect of user u and $$b_g$$ is the genere effect for user u and the genres of movie m. To estimate $$\mu$$ the mean of all ratings in the training set was taken. $$b_m$$ was similarly taken to be the mean of ratings that movie received minus $$\mu$$, $$\hat{b}_m = \bar{Y}_m -\mu$$. $$\hat{b}_u$$ was, however corrected using $$b_m$$ and calculated with the following formula $$\hat{b}_u =  \overline{Y_{u,m}-b_m}-\mu$$, this was done to minimize movie biases on the estimate of the user effect. $$bg_{u,m}$$ was more complicated to estimate: first the estimate of the effect a particular genre would have on a particular users rating was calculated by $$\hat{b}_{u,g}= \overline{Y_{u,m}-b_m-b_u}-\mu$$ then it was assumed that $$bg_{u,m} = f(b_{u,g,1},b_{u,g,2}, ..., b_{u,g,N},N)$$
+$$ Y_{m,u} = \mu + b_m + b_u + bg_{u,m} + \epsilon_{u,i} $$ where $$ \Y_{m,u}$$ is the  rating user u will give movie m, $$\mu$$ is the average movie rating $$b_m$$ is the effect of movie m $$b_u$$ is the effect of user u and $$b_g$$ is the genere effect for user u and the genres of movie m. To estimate $$\mu$$ the mean of all ratings in the training set was taken. $$b_m$$ was similarly taken to be the mean of ratings that movie received minus $$\mu$$, $$\hat{b}_m = \bar{Y}_m -\mu$$. $$\hat{b}_u$$ was, however corrected using $$b_m$$ and calculated with the following formula $$\hat{b}_u =  \overline{Y_{u,m}-b_m}-\mu$$, this was done to minimize movie biases on the estimate of the user effect. $$bg_{u,m}$$ was more complicated to estimate: first the estimate of the effect a particular genre would have on a particular users rating was calculated by $$\hat{b}_{u,g}= \overline{Y_{u,m}-b_m-b_u}-\mu$$ then it was assumed that $$bg_{u,m} = f(b_{u,g_1},b_{u,g_2}, ..., b_{u,g_N},N)=y\frac{\sum b_{u,g_i}}{N^x}$$ where $$y$$ and $$x$$ are tuning parameters. This function was chosen because it includes both the sum ($$x = 0$$) and the mean ($$x = 1$$) of $$b_{u,g_i}$$ and is versatile in the effect of $$N$$ on $$bg_{u,m}$$. To tune the parameters of $$f$$ 10 fold cross validation was used on the training set to estimate the RMSE for a set of tuning parameters and the parameters that minimized the RMSE were chosen. 
+
 described in Introduction to Data Science R. Irizarry
 
 ##Results
+
+
 
 ##Conclusion
 
@@ -28,11 +31,13 @@ When you click the **Knit** button a document will be generated that includes bo
 We are going to use the following library:
 
 ```{r loading-libs, message=FALSE}
+library(ggplot2)
 library(tidyverse)
 ```
 
-```{r cars}
-summary(cars)
+```{r Span Time Smoothing echo = FALSE}
+spanerr = readRDS('rdas/spanerr.Rda')
+spanerr %>% ggplot(aes(Span, RMSE)) + geom_point()
 ```
 
 ## Including Plots

@@ -120,7 +120,7 @@ b_u = edx %>% mutate(rating = rating - mu - bm) %>% group_by(userId) %>% summari
 edx = left_join(edx, b_u, by = 'userId')
 
 #creates data frame of user-genre effect: mean deviation from prediction 
-# by genre-user combination
+# by genre-user combination (called b_{u,g} in report)
 for (genre in unlist(genrelist)){
     temp = edx %>% mutate(rating = rating - mu - bm - bu) %>%
       filter(str_detect(edx$genre, genre)) %>% group_by(userId) %>%
