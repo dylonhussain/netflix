@@ -9,21 +9,21 @@ library(ggplot2)
 #Helper code to save and load objects if code is
 #is run in segments
 #####################################################
-# saveRDS(b_m, file = 'b_m.Rda')
-# saveRDS(b_u, file = 'b_u.Rda')
-# saveRDS(edx, file = 'edx.Rda')
-# saveRDS(genrelist, file = 'genrelist.Rda')
-# saveRDS(mu, file = 'mu.Rda')
-# saveRDS(knnfit, file = 'knnfactorfit.Rda')
-# saveRDS(validation, file = 'validation.Rda')
-# edx = readRDS('edx.Rda')
-# mu = readRDS('mu.Rda')
-# b_m = readRDS('b_m.Rda')
-# b_u = readRDS('b_u.Rda')
-# b_g = readRDS('b_g.Rda')
-# genrelist = readRDS('genrelist.Rda')
-# knnfit = readRDS('knnfit.Rda')
-# validation = readRDS('validation.Rda')
+# saveRDS(b_m, file = 'rdas/b_m.Rda')
+# saveRDS(b_u, file = 'rdas/b_u.Rda')
+# saveRDS(edx, file = 'rdas/edx.Rda')
+# saveRDS(genrelist, file = 'rdas/genrelist.Rda')
+# saveRDS(mu, file = 'rdas/mu.Rda')
+# saveRDS(knnfit, file = 'rdas/knnfactorfit.Rda')
+# saveRDS(validation, file = 'rdas/validation.Rda')
+# edx = readRDS('rdas/edx.Rda')
+# mu = readRDS('rdas/mu.Rda')
+# b_m = readRDS('rdas/b_m.Rda')
+# b_u = readRDS('rdas/b_u.Rda')
+# b_g = readRDS('rdas/b_g.Rda')
+# genrelist = readRDS('rdas/genrelist.Rda')
+# knnfit = readRDS('rdas/knnfit.Rda')
+# validation = readRDS('rdas/validation.Rda')
 
 ##########################################################
 # Create edx set, validation set (final hold-out test set)
@@ -335,22 +335,24 @@ validation = bind_cols(validation, b_g)
 #Sum of error squared
 errsq = validation %>%
   mutate(rhat = mu+bm+bu+ifelse(genrecount != 0, bg/genrecount^power,0)) %>%
+  mutate(rhat = ifelse(rhat>5, 5, rhat)) %>%
+  mutate(rhat = ifelse(rhat<.5, .5, rhat)) %>%
   mutate(errsq = (as.numeric(rating) - as.numeric(rhat))^2) %>%
     select(errsq) %>% sum()
 
 #root mean
 rmse = sqrt(errsq/nrow(validation))
 rmse
-# rmse = 0.8601549 WOOT!!!!!!
+# rmse = 0.8585179 WOOT!!!!!!
 
 #Makes path for rdas that the report will use and saves them
 ifelse(!dir.exists('rdas'), dir.create('rdas'), print('folder rdas exists'))
 setwd('rdas')
-edx = readRDS('edx.Rda')
-mu = readRDS('mu.Rda')
-b_m = readRDS('b_m.Rda')
-b_u = readRDS('b_u.Rda')
-b_g = readRDS('b_g.Rda')
-genrelist = readRDS('genrelist.Rda')
-knnfit = readRDS('knnfit.Rda')
-validation = readRDS('validation.Rda')
+saveRDS(b_m, file = 'b_m.Rda')
+saveRDS(b_u, file = 'b_u.Rda')
+saveRDS(edx, file = 'edx.Rda')
+saveRDS(genrelist, file = 'genrelist.Rda')
+saveRDS(mu, file = 'mu.Rda')
+saveRDS(knnfit, file = 'knnfactorfit.Rda')
+saveRDS(validation, file = 'validation.Rda')
+
