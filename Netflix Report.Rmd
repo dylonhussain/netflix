@@ -9,43 +9,47 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Introduction
-Machine learning is a ubiquitous feature  In this report we describe a movie recommendation system for the MovieLens dataset.
-##Methods
-To achieve the prediction algorithm we used matrix factorization where we assume
-$$ Y_{m,u} = \mu + b_m + b_u + bg_{u,m} + \epsilon_{u,i} $$ where $$ \Y_{m,u}$$ is the  rating user u will give movie m, $$\mu$$ is the average movie rating $$b_m$$ is the effect of movie m $$b_u$$ is the effect of user u and $$b_g$$ is the genere effect for user u and the genres of movie m. To estimate $$\mu$$ the mean of all ratings in the training set was taken. $$b_m$$ was similarly taken to be the mean of ratings that movie received minus $$\mu$$, $$\hat{b}_m = \bar{Y}_m -\mu$$. $$\hat{b}_u$$ was, however corrected using $$b_m$$ and calculated with the following formula $$\hat{b}_u =  \overline{Y_{u,m}-b_m}-\mu$$, this was done to minimize movie biases on the estimate of the user effect. $$bg_{u,m}$$ was more complicated to estimate: first the estimate of the effect a particular genre would have on a particular users rating was calculated by $$\hat{b}_{u,g}= \overline{Y_{u,m}-b_m-b_u}-\mu$$ then it was assumed that $$bg_{u,m} = f(b_{u,g_1},b_{u,g_2}, ..., b_{u,g_N},N)=y\frac{\sum b_{u,g_i}}{N^x}$$ where $$y$$ and $$x$$ are tuning parameters. This function was chosen because it includes both the sum ($$x = 0$$) and the mean ($$x = 1$$) of $$b_{u,g_i}$$ and is versatile in the effect of $$N$$ on $$bg_{u,m}$$. To tune the parameters of $$f$$ 10 fold cross validation was used on the training set to estimate the RMSE for a set of tuning parameters and the parameters that minimized the RMSE were chosen. 
-
-described in Introduction to Data Science R. Irizarry
-
-##Results
-
-
-
-##Conclusion
-
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-We are going to use the following library:
-
+Machine learning is a ubiquitous tool used in industry today that enables people to make informed decisions from massive amounts of data that would not be feasible without computers. This report describes a supervised machine learning algorithm that predicts user ratings for movies, that was trained with the MovieLens dataset. The following packages in this report.
 ```{r loading-libs, message=FALSE}
 library(ggplot2)
 library(tidyverse)
 ```
 
-```{r Span Time Smoothing echo = FALSE}
+## Methods
+The prediction algorithm uses matrix factorization (described in Introduction to Data Science R. Irizarry) where it is assumed that
+$Y_{m,u,t} = \mu + b_m + b_u + bg_{u,m} + b_t + \epsilon_{u,m}$ where $Y_{m,u}$ is the  rating user u will give movie m, $\mu$ is the average movie rating $b_m$ is the effect of movie m $b_u$ is the effect of user u, $bg_{um}$ is the genere effect for user u and the genres of movie m, and $\epsilon$ is the independent sampling error. To estimate $\mu$ the mean of all ratings in the training set was taken. $b_m$ was similarly taken to be the mean of ratings that movie received minus $\mu$, $\hat{b}_m = \mu - \bar{Y}_m$. $\hat{b}_u$ was, calculated with the following formula $\hat{b}_u =  \mu - \bar{Y}_m-\hat{b_m}$, this was done to minimize movie biases on the estimate of the user effect. $bg_{u,m}$ was more complicated to estimate: first the estimate of the effect a particular genre would have on a particular users rating was calculated by $\hat{b}_{u,g(m)}=\mu - \bar{Y}_m-\hat{b_m}-\hat{b_u}$ then it was assumed that $bg_{u,m} = f(b_{u,g_1},b_{u,g_2}, ..., b_{u,g_N},N)=y\frac{\sum b_{u,g_i(m)}}{N^x}$ where $y$ and $x$ are tuning parameters and N is the number of genres in the movie. This function was chosen because it includes both the sum ($x = 0$) and the mean ($x = 1$) of $b_{u,g_i}$ and is versatile in the effect of $N$ on $bg_{u,m}$. To tune the parameters of $f$ 10 fold cross validation was used on the training set to estimate the RMSE for a set of tuning parameters and the parameters that minimized the RMSE were chosen. It was then assumed that $b_t = \mu - \bar{Y}_m-\hat{b_m}-\hat{b_u}-\hat{b}_{u,g}$ and a loess algorithm was applied to $b(t)$.
+
+
+
+## Results
+
+As shown in the graph below, the optimal value for x (for y = 1) was found to be .41. This is consistent with intuition because it was less than 1 (implying that a movie with multiple genres that a user dislikes would would be rated lower than a movie with just one genre the user dislikes) and greater than 0(this would likely cause a run-away effect on movies with many genres).
+
+```{r x Tuning Results, echo = FALSE}
+exptune = readRDS('rdas/exptune.Rda')
+exptune %>% ggplot(aes(power, rmse)) + geom_point() + ggtitle('x Tuning Results')+ xlab('x') + ylab('RMSE')
+```
+The program was structured to allow for easy minimum searching on the x-y plane but, quite auspiciously, the minimum y happened to be 1 as shown below. This is not surprising because it indicates that the genre effect has the same weight as the other effects. 
+
+```{r y Tuning Results, echo = FALSE}
+weighttune = readRDS('rdas/weighttune.Rda')
+weighttune %>% ggplot(aes(weight, rmse)) + geom_point()+ ggtitle('y Tuning Results') + xlab('y') + ylab('RMSE')
+```
+
+When the loess smoothing algorithm was applied to time in an attempt to improve the prediction RMSE asymptotically approaches a value greater than that which was achieved without smoothing. For this reason, it was assumed that $b_t=0$.
+
+```{r Effect of Span on RMSE, echo = FALSE}
 spanerr = readRDS('rdas/spanerr.Rda')
-spanerr %>% ggplot(aes(Span, RMSE)) + geom_point()
+spanerr %>% ggplot(aes(Span, RMSE)) + geom_point() + ggtitle('Effect of Span on RMSE')
 ```
 
-## Including Plots
+A KNN model was also applied to explore improvements. As shown below, this algorithm scales exponentially with the number of observations making it prohibitively expensive to run on the entire training set. Also the RMSE estimation actually increased after applying the KNN algorithm. For these reasons no KNN model was used in the the final code.
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r Time Required to Fit KNN Model to Subsets, echo = FALSE}
+knnduration = readRDS('rdas/knnduration.Rda')
+knnduration %>% ggplot(aes(p, duration)) + geom_point()+ ggtitle('Time Required to Fit KNN Model to Subsets')+ xlab('Fraction of Training Set') + ylab('Duration (s)')
 ```
+the final model using $Y_{m,u} = \mu + b_m + b_u + bg_{u,m} + \epsilon_{u,i}$ was corrected for the rating bounds of 0.5-5. Using this model, a RMSE of 0.8585179 was acheived on the validation set. 
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Conclusion
+A satisfactory prediction algorithm was produced using matrix decomposition with the model $Y_{m,u} = \mu + b_m + b_u + bg_{u,m} + \epsilon_{u,i}$. Future work on this  algorithm would likely benefit from an implementation of a KNN algorithm that uses the entire training set. Due to computational and time restraints, only a small subset of the training set was used to train the knn algorithm. Also, exploration of other smoothing algorithms might improve the RMSE. In conclusion, a satisfactory prediction algorithm was achieved using only the user, movie, genre effects on the average. 

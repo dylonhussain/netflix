@@ -281,7 +281,6 @@ edx = edx %>% mutate(rhat = mu+bm+bu+ifelse(genrecount != 0, bg/genrecount^power
 #for loop finding time required to make knnmodel for different portions of edx
 # edx = edx %>%  mutate(rhat = mu + bu + bm + ifelse(genrecount != 0, bg/(genrecount)^ power, 0))
 # for (p in seq(.004, .006, .001)){
-#   p = .005
 #   small = createDataPartition(edx$rating, times = 1, p = p)
 #   small = as.vector(small$Resample1)
 #   small = edx[small,] %>% select(rating, rhat)
@@ -296,17 +295,17 @@ edx = edx %>% mutate(rhat = mu+bm+bu+ifelse(genrecount != 0, bg/genrecount^power
 #Creates knn model (knnfit) for .005 sample of edx
 #RMSE 0.836469 for (3.984527 when rating is a factor)
 #p = .005 so scrapped the knn idea
-p = .005
-small = createDataPartition(edx$rating, times = 1, p = p)
-small = as.vector(small$Resample1)
-small = edx[small,]  %>%
-  select(rating, rhat)
-knnfit = train(rating ~ rhat, data = small, method = 'knn')
+# p = .005
+# small = createDataPartition(edx$rating, times = 1, p = p)
+# small = as.vector(small$Resample1)
+# small = edx[small,]  %>%
+#   select(rating, rhat)
+# knnfit = train(rating ~ rhat, data = small, method = 'knn')
 
 #Uses knn model (knnfit) to make final prediction for edx
-prediction = data.frame(rhat = predict(knnfit, newdata = edx))
-edx = edx %>% select(-rhat)
-edx = bind_cols(edx, prediction)
+# prediction = data.frame(rhat = predict(knnfit, newdata = edx))
+# edx = edx %>% select(-rhat)
+# edx = bind_cols(edx, prediction)
 
 #Uses 10 fold validation to estimate the RMSE 
 foldcount = 10
