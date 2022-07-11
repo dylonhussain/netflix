@@ -352,6 +352,6 @@ saveRDS(b_u, file = 'b_u.Rda')
 saveRDS(edx, file = 'edx.Rda')
 saveRDS(genrelist, file = 'genrelist.Rda')
 saveRDS(mu, file = 'mu.Rda')
-saveRDS(knnfit, file = 'knnfactorfit.Rda')
+#saveRDS(knnfit, file = 'knnfactorfit.Rda')
 saveRDS(validation, file = 'validation.Rda')
 
