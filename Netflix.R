@@ -4,8 +4,192 @@ library(data.table)
 library(stringr)
 library(lubridate)
 library(ggplot2)
-library(parallel)
-library(MASS)
+
+##########################################################
+# Create edx set, validation set (final hold-out test set)
+##########################################################
+
+# Note: this process could take a couple of minutes
+
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+
+library(tidyverse)
+library(caret)
+library(data.table)
+
+# MovieLens 10M dataset:
+# https://grouplens.org/datasets/movielens/10m/
+# http://files.grouplens.org/datasets/movielens/ml-10m.zip
+
+dl <- tempfile()
+download.file("http://files.grouplens.org/datasets/movielens/ml-10m.zip", dl)
+
+ratings <- fread(text = gsub("::", "\t", readLines(unzip(dl, "ml-10M100K/ratings.dat"))),
+                 col.names = c("userId", "movieId", "rating", "timestamp"))
+
+movies <- str_split_fixed(readLines(unzip(dl, "ml-10M100K/movies.dat")), "\\::", 3)
+colnames(movies) <- c("movieId", "title", "genres")
+
+# if using R 3.6 or earlier:
+movies <- as.data.frame(movies) %>% mutate(movieId = as.numeric(levels(movieId))[movieId],
+                                           title = as.character(title),
+                                           genres = as.character(genres))
+# if using R 4.0 or later:
+movies <- as.data.frame(movies) %>% mutate(movieId = as.numeric(movieId),
+                                           title = as.character(title),
+                                           genres = as.character(genres))
+
+
+movielens <- left_join(ratings, movies, by = "movieId")
+
+# Validation set will be 10% of MovieLens data
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+test_index <- createDataPartition(y = movielens$rating, times = 1, p = 0.1, list = FALSE)
+edx <- movielens[-test_index,]
+temp <- movielens[test_index,]
+
+# Make sure userId and movieId in validation set are also in edx set
+validation <- temp %>% 
+  semi_join(edx, by = "movieId") %>%
+  semi_join(edx, by = "userId")
+
+# Add rows removed from validation set back into edx set
+removed <- anti_join(temp, validation)
+edx <- rbind(edx, removed)
+
+rm(dl, ratings, movies, test_index, temp, movielens, removed)
+
+setwd('Rda')
+edx2 = readRDS('edx.Rda')
+##################################DONT RUN The comment out code, kills RAM. used to get all genres.###########################
+# genresplit = edx %>% select(genres) %>% separate(genres, into = as.character(1:8), sep = '\\|')  
+# colnames(genresplit) = c('1', '1', '1', '1', '1', '1', '1', '1')
+
+#Verified that no rows in edx have >8genres
+#distinct(genresplit[,8])
+
+# genrelist = as.vector(genresplit[,1])
+# for (i in 2:8){
+#       print(i)
+#       genrelist = bind_rows(genrelist, genresplit[, ..i])
+# }
+# > distinct(genrelist)
+# 1
+# 1:             Comedy
+# 2:             Action
+# 3:           Children
+# 4:          Adventure
+# 5:          Animation
+# 6:              Drama
+# 7:              Crime
+# 8:             Sci-Fi
+# 9:             Horror
+# 10:           Thriller
+# 11:          Film-Noir
+# 12:            Mystery
+# 13:            Western
+# 14:        Documentary
+# 15:            Romance
+# 16:            Fantasy
+# 17:            Musical
+# 18:                War
+# 19:               IMAX
+# 20: (no genres listed)
+# 21:               <NA>
+#   1
+########################################################^^output above vvresulting variable below######################
+genrelist = c('Comedy', 'Action','Children','Adventure','Animation','Drama','Crime','Sci-Fi','Horror',
+              'Thriller',
+              'Film-Noir',
+              'Mystery',
+              'Western',
+              'Documentary',
+              'Romance',
+              'Fantasy',
+              'Musical',
+              'War',
+              'IMAX')
+saveRDS(genrelist, file = 'genrelist.Rda')
+
+# #Determine mu, the average movie rating
+# mu = edx2 %>% summarise(mu = mean(rating)) %>% .[[1]]
+# saveRDS(mu, file = 'mu.Rda')
+# #Determine b_m, the movie effect
+# b_m = edx2 %>% group_by(movieId) %>% summarise(bm = mean(rating) - mu)
+# saveRDS(b_m, file = 'b_m.Rda')
+# #Determine b_u, the user effect
+# b_u = edx2 %>% group_by(userId) %>% summarise(bu = mean(rating) - mu)
+# saveRDS(b_u, file = 'b_u.Rda')
+# #Add columns to validation set and find expected rating.
+# edx2 = left_join(edx2, b_u, by = 'userId')
+# edx2 = left_join(edx2, b_m, by = 'movieId')
+
+# #Determine mu, the average movie rating but corrects for previous prediction
+mu = edx2 %>% summarise(mu = mean(rating)) %>% .[[1]]
+saveRDS(mu, file = 'mu.Rda')
+#Determine b_m, the movie effect
+b_m = edx2 %>% mutate(rating = rating - mu) %>% group_by(movieId)  %>% summarise(bm = mean(rating))
+edx2 = left_join(edx2, b_m, by = 'movieId')
+#Determine b_u, the user effect
+b_u = edx2 %>% mutate(rating = rating - mu - bm) %>% group_by(userId) %>% summarise(bu = mean(rating))
+edx2 = left_join(edx2, b_u, by = 'userId')
+#Add columns to validation set and find expected rating.
+
+
+
+#creates data frame of user-genre effect 
+
+# for (i in 1:length(genrelist)){
+#   temp = edx2 %>% filter(str_detect(edx2$genre, genrelist[i])) %>% group_by(userId) %>% 
+#                                                 summarise(thisgenre = mean(rating))
+#   colnames(temp) = c('userId', genrelist[i])
+#   temp = left_join(b_u, temp, by = 'userId')
+#   temp2 = temp[i+2] - temp[2] - mu  #user-genre_effect = avg_genre_rating - bu - mu
+#   b_u = bind_cols(b_u, temp2)
+# }
+# rm(temp, temp2)
+#### corrected user genre effect
+for (i in 1:length(genrelist)){
+  temp = edx2 %>% mutate(rating = rating - mu - bm - bu) %>%
+    filter(str_detect(edx2$genre, genrelist[i])) %>% group_by(userId) %>% 
+    summarise(thisgenre = mean(rating))
+  colnames(temp) = c('userId', genrelist[i])
+  temp = left_join(b_u, temp, by = 'userId')
+  b_u = bind_cols(b_u, temp[, i + 2])
+}
+rm(temp)
+
+
+#finds all genres in observation and calculates user-genre effect b_g
+calcGE = function(g, u){
+  user = b_u %>% filter(userId == u)
+  genreeff = 0
+  genrecount = 0
+  for (i in 1:length(genrelist)){
+    if(str_detect(g, genrelist[i]) & !is.na(user[[1,i+2]])){
+      genrecount = genrecount + 1
+      genreeff = genreeff + user[[1,i+2]]
+    }
+  }
+  if(genrecount == 0){
+    genreeff = 0
+  }
+  c(genreeff, genrecount)
+}
+
+#binds b_g to edx
+temp = mapply(calcGE, edx2$genres, edx2$userId)   
+b_g = data.frame(bg = temp[1,], gcount = temp[2,])
+edx2 = bind_cols(edx2, b_g)
+
+
+#round timestamp to date
+edx2 = edx2 %>% mutate(date = floor_date(as_datetime(timestamp), unit = 'day')) 
+#saveRDS(edx2, file = 'edx2.Rda')
+saveRDS(edx2, file = 'edx2corrected.Rda')
+setwd('..')
 
 setwd('Rda')
 edx2 = readRDS('edx2.Rda')
